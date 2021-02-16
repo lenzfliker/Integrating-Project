@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
 import time
+import pyrebase
 from datetime import datetime
 import cv2
 import sys
@@ -10,6 +11,16 @@ from firebase_admin import credentials, initialize_app, storage
 cred = credentials.Certificate("one-meter-clip-08d29e2b9d31.json")
 initialize_app(cred, {'storageBucket': "one-meter-clip-default-rtdb.firebaseio.com"})
 
+#firebase configs
+config = {
+  "apiKey": "rafeFeNHofRgUmkye8owLYymZzI9qpoX3i0HDh4V",
+  "authDomain": "one-meter-clip.firebaseapp.com",
+  "databaseURL": "https://one-meter-clip-default-rtdb.firebaseio.com",
+  "storageBucket": "one-meter-clip.appspot.com"
+}
+
+firebase = pyrebase.initialize_app(config)
+db = firebase.database()
 
 #faceimg
 # Put your local file path 
@@ -79,6 +90,8 @@ while True:
         if len(faces) == 0: #if no face detected
             GPIO.output(LED, 0)
             print ("No faces found")
+            db.child("/distance").set(distance)
+            db.child("/faces").set(str(0))
      
         else:     #if face detected
             GPIO.output(LED, 1)
@@ -98,9 +111,19 @@ while True:
             # public access from the URL
             bucket.blob(fName).make_public()
 
+            #upload data to firebase
+            data = {
+                "distance": distance,
+                "last" : dt_string,
+                "faces" : str(faces.shape[0]),
+                "last person" : bucket.blob(fName).public_url
+            }
+            db.set(data)
     
     #if not ayone near less than 1m
     else :
         GPIO.output(LED, 0)
         print("Distance : ", distance, " cm")
+        db.child("/distance").set(distance)
+        db.child("/faces").set(str(0))
 time.sleep(2)
