@@ -38,10 +38,10 @@ video_capture = cv2.VideoCapture(0)
 #pin config
 TRIG=21
 ECHO=20
-LED=16
+BUZZER=16
 
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(LED, GPIO.OUT)
+GPIO.setup(BUZZER, GPIO.OUT)
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
 
@@ -88,13 +88,13 @@ while True:
         
          #check face count
         if len(faces) == 0: #if no face detected
-            GPIO.output(LED, 0)
+            GPIO.output(BUZZER, 0)
             print ("No faces found")
             db.child("/distance").set(distance)
             db.child("/faces").set(str(0))
      
         else:     #if face detected
-            GPIO.output(LED, 1)
+            GPIO.output(BUZZER, 1)
             print (faces)
             print ("Number of faces detected: " + str(faces.shape[0]))
 
@@ -122,7 +122,7 @@ while True:
     
     #if not ayone near less than 1m
     else :
-        GPIO.output(LED, 0)
+        GPIO.output(BUZZER, 0)
         print("Distance : ", distance, " cm")
         db.child("/distance").set(distance)
         db.child("/faces").set(str(0))
