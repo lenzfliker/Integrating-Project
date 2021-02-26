@@ -5,6 +5,7 @@ from datetime import timedelta
 import cv2
 import sys
 import numpy
+import os
 from firebase_admin import credentials, initialize_app, storage
 import face_recognition 
 
@@ -27,10 +28,10 @@ while True:
         # dd/mm/YY H:M:S
     imgName = now.strftime("%M%S")
     index = int(imgName)
-    mmnow = datetime.now() - timedelta(seconds=15)
-    m2mnow = datetime.now() - timedelta(seconds=30)
-    indexSM = int(mmnow.strftime("%M%S"))
-    indexS2M = int(m2mnow.strftime("%M%S"))
+    time1 = datetime.now() - timedelta(seconds=15)
+    time2 = datetime.now() - timedelta(seconds=30)
+    index1 = int(time1.strftime("%M%S"))
+    index2 = int(time2.strftime("%M%S"))
     fName = imgName+".jpg"
         
     #detectfaces
@@ -51,17 +52,20 @@ while True:
 
         print(str(len(faces)) + " found!!")
 
-        known_image = face_recognition.load_image_file(fName) 
-        biden_encoding = face_recognition.face_encodings(known_image)[0] 
+        try : 
+            known_image = face_recognition.load_image_file(fName) 
+            biden_encoding = face_recognition.face_encodings(known_image)[0] 
+        except : 
+            print("error")
 
-        for i in range(index,indexSM,-1) :
+        for i in range(index,index1,-1) :
             try : 
                 unknown_image = face_recognition.load_image_file(str(i)+".jpg")  
                 unknown_encoding = face_recognition.face_encodings(unknown_image)[0] 
                 results = face_recognition.compare_faces([biden_encoding], unknown_encoding) 
 
                 if (results == [True]) : 
-                    for x in range(indexSM,indexS2M,-1) :
+                    for x in range(index1,index2,-1) :
                         try : 
                             unknown_image = face_recognition.load_image_file(str(x)+".jpg")  
                             unknown_encoding = face_recognition.face_encodings(unknown_image)[0] 
@@ -69,12 +73,18 @@ while True:
 
                             if (results == [True]) : 
                                 print("Found Match!!")
-                                break
+                                
                         except : 
                             continue
 
             except : 
                  continue
+
+             
+    for z in range(index2,index2-50,-1) : 
+        if os.path.exists(str(z)+".jpg"):
+            os.remove(str(z)+".jpg")
+            print("file deleted!!")
 
     # Display the resulting frame
     cv2.imshow('Video', frame)
@@ -85,5 +95,3 @@ while True:
 # When everything is done, release the capture
 video_capture.release()
 cv2.destroyAllWindows()
-           
-
