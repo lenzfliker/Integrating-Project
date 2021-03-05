@@ -1,3 +1,4 @@
+import RPi.GPIO as GPIO
 import time
 import pyrebase
 from datetime import datetime
@@ -104,6 +105,7 @@ while True:
             print ("No faces found")
             db.child("/distance").set(distance)
             db.child("/faces").set(str(0))
+            db.child("/match").set(0)
      
         else:     #if face detected
             GPIO.output(LED, 1)
@@ -143,8 +145,11 @@ while True:
                                     print("Found Match!!")    
                                     #upload image
                                     blob.upload_from_filename(str(x)+".jpg")
+                                    bucket.rename_blob(blob , "match"+str(x)+".jpg")
                                     # public access from the URL
-                                    bucket.blob(str(x)+".jpg").make_public()
+                                    bucket.blob("match"+str(x)+".jpg").make_public()
+                                    db.child("/match").set(1)
+                                    db.child("/last_follower").set(bucket.blob("match"+str(x)+".jpg").public_url)
                             except : 
                                 continue
                 except : 
@@ -156,6 +161,8 @@ while True:
             bucket.rename_blob(blob , fName1)
             # public access from the URL
             bucket.blob(fName1).make_public()
+            
+
 
             #upload data to firebase
             data = {
@@ -163,7 +170,8 @@ while True:
                 "faces" : str(faces.shape[0]),
                 "last person" : bucket.blob(fName).public_url
             }
-            db.set(data)
+            
+            db.update(data)
     
     #if not ayone near less than 1m
     else :
@@ -171,8 +179,12 @@ while True:
         print("Distance : ", distance, " cm")
         db.child("/distance").set(distance)
         db.child("/faces").set(str(0))
+        db.child("/match").set(0)
     
-    for z in range(index2,index3,-1) : 
-            if os.path.exists(str(z)+".jpg"):
-                os.remove(str(z)+".jpg")
-                print("file deleted!!")
+    try :
+        for z in range(index2,index3,-1) : 
+                if os.path.exists(str(z)+".jpg"):
+                    os.remove(str(z)+".jpg")
+                    print("file deleted!!")
+    except :
+        print("Error")
