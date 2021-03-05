@@ -1,11 +1,13 @@
-import RPi.GPIO as GPIO
 import time
 import pyrebase
 from datetime import datetime
+from datetime import timedelta 
 import cv2
 import sys
 import numpy
+import os
 from firebase_admin import credentials, initialize_app, storage
+import face_recognition 
 
 # Init firebase with your credentials
 cred = credentials.Certificate("one-meter-clip-08d29e2b9d31.json")
@@ -38,10 +40,10 @@ video_capture = cv2.VideoCapture(0)
 #pin config
 TRIG=21
 ECHO=20
-BUZZER=16
+LED=16
 
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(BUZZER, GPIO.OUT)
+GPIO.setup(LED, GPIO.OUT)
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
 
@@ -66,11 +68,21 @@ while True:
         print("Distance : ", distance, " cm")
         
         now = datetime.now()
-        # dd/mm/YY H:M:S
-        dt_string = now.strftime("%d:%m:%Y-%H:%M:%S")
-        fName = dt_string+".jpg"
         
-        #detect faces
+        # dd/mm/YY H:M:S
+        imgName = now.strftime("%M%S")
+        index = int(imgName)
+        time1 = datetime.now() - timedelta(seconds=15)
+        time2 = datetime.now() - timedelta(seconds=30)
+        time3 = datetime.now() - timedelta(seconds=120)
+        index1 = int(time1.strftime("%M%S"))
+        index2 = int(time2.strftime("%M%S"))
+        index3 = int(time3.strftime("%M%S"))
+        fName = imgName+".jpg"
+        dt_string = now.strftime("%d:%m:%Y-%H:%M:%S")
+        fName1 = dt_string+".jpg"
+        
+
         # Capture frame-by-frame
         ret, frame = video_capture.read()
 
@@ -88,13 +100,13 @@ while True:
         
          #check face count
         if len(faces) == 0: #if no face detected
-            GPIO.output(BUZZER, 0)
+            GPIO.output(LED, 0)
             print ("No faces found")
             db.child("/distance").set(distance)
             db.child("/faces").set(str(0))
      
         else:     #if face detected
-            GPIO.output(BUZZER, 1)
+            GPIO.output(LED, 1)
             print (faces)
             print ("Number of faces detected: " + str(faces.shape[0]))
 
@@ -104,17 +116,50 @@ while True:
             for (x, y, w, h) in faces:
                 cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                 cv2.imwrite('result.jpg',frame)
-                
+                cv2.imwrite(fName,gray)
+
+            print(str(len(faces)) + " found!!")
+
+            try : 
+                known_image = face_recognition.load_image_file(fName) 
+                biden_encoding = face_recognition.face_encodings(known_image)[0] 
+            except : 
+                print("error")
+
+            for i in range(index,index1,-1) :
+                try : 
+                    unknown_image = face_recognition.load_image_file(str(i)+".jpg")  
+                    unknown_encoding = face_recognition.face_encodings(unknown_image)[0] 
+                    results = face_recognition.compare_faces([biden_encoding], unknown_encoding) 
+
+                    if (results == [True]) : 
+                        for x in range(index1,index2,-1) :
+                            try : 
+                                unknown_image = face_recognition.load_image_file(str(x)+".jpg")  
+                                unknown_encoding = face_recognition.face_encodings(unknown_image)[0] 
+                                results = face_recognition.compare_faces([biden_encoding], unknown_encoding)
+
+                                if (results == [True]) : 
+                                    print("Found Match!!")    
+                                    #upload image
+                                    blob.upload_from_filename(str(x)+".jpg")
+                                    # public access from the URL
+                                    bucket.blob(str(x)+".jpg").make_public()
+                            except : 
+                                continue
+                except : 
+                     continue
+             
+                    
             #upload image
             blob.upload_from_filename(fileName)
-            bucket.rename_blob(blob , fName)
+            bucket.rename_blob(blob , fName1)
             # public access from the URL
-            bucket.blob(fName).make_public()
+            bucket.blob(fName1).make_public()
 
             #upload data to firebase
             data = {
                 "distance": distance,
-                "last" : dt_string,
                 "faces" : str(faces.shape[0]),
                 "last person" : bucket.blob(fName).public_url
             }
@@ -122,8 +167,12 @@ while True:
     
     #if not ayone near less than 1m
     else :
-        GPIO.output(BUZZER, 0)
+        GPIO.output(LED, 0)
         print("Distance : ", distance, " cm")
         db.child("/distance").set(distance)
         db.child("/faces").set(str(0))
-time.sleep(2)
+    
+    for z in range(index2,index3,-1) : 
+            if os.path.exists(str(z)+".jpg"):
+                os.remove(str(z)+".jpg")
+                print("file deleted!!")
