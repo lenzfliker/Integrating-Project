@@ -25,13 +25,16 @@ while True:
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     now = datetime.now()
-        # dd/mm/YY H:M:S
+
+    # dd/mm/YY H:M:S
     imgName = now.strftime("%M%S")
     index = int(imgName)
     time1 = datetime.now() - timedelta(seconds=15)
     time2 = datetime.now() - timedelta(seconds=30)
+    time3 = datetime.now() - timedelta(seconds=120)
     index1 = int(time1.strftime("%M%S"))
     index2 = int(time2.strftime("%M%S"))
+    index3 = int(time3.strftime("%M%S"))
     fName = imgName+".jpg"
         
     #detectfaces
@@ -72,16 +75,14 @@ while True:
                             results = face_recognition.compare_faces([biden_encoding], unknown_encoding)
 
                             if (results == [True]) : 
-                                print("Found Match!!")
-                                
+                                print("Found Match!!")                                
                         except : 
                             continue
-
             except : 
                  continue
 
              
-    for z in range(index2,index2-50,-1) : 
+    for z in range(index2,index3,-1) : 
         if os.path.exists(str(z)+".jpg"):
             os.remove(str(z)+".jpg")
             print("file deleted!!")
