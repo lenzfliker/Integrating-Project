@@ -1,3 +1,11 @@
+'''
+Project : One-Meter-Clip
+language : python
+Created On : 16-02-2021
+2nd Year Final Project
+*Run On Raspberry pi
+'''
+
 import RPi.GPIO as GPIO
 import time
 import pyrebase
@@ -25,7 +33,6 @@ config = {
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
 
-#faceimg
 # Put your local file path 
 fileName = "result.jpg"
 bucket = storage.bucket("one-meter-clip.appspot.com")
@@ -41,10 +48,10 @@ video_capture = cv2.VideoCapture(0)
 #pin config
 TRIG=21
 ECHO=20
-LED=16
+BUZ=16
 
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(LED, GPIO.OUT)
+GPIO.setup(BUZ, GPIO.OUT)
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
 
@@ -81,8 +88,7 @@ while True:
         index3 = int(time3.strftime("%M%S"))
         fName = imgName+".jpg"
         dt_string = now.strftime("%d:%m:%Y-%H:%M:%S")
-        fName1 = dt_string+".jpg"
-        
+        fName1 = dt_string+".jpg"        
 
         # Capture frame-by-frame
         ret, frame = video_capture.read()
@@ -99,28 +105,24 @@ while True:
             flags=cv2.CASCADE_SCALE_IMAGE
         )
         
-         #check face count
+        #check face count
         if len(faces) == 0: #if no face detected
-            GPIO.output(LED, 0)
+            GPIO.output(BUZ, 0)
             print ("No faces found")
             db.child("/distance").set(distance)
             db.child("/faces").set(str(0))
             db.child("/match").set(0)
      
         else:     #if face detected
-            GPIO.output(LED, 1)
+            GPIO.output(BUZ, 1)
             print (faces)
             print ("Number of faces detected: " + str(faces.shape[0]))
 
-
-
             # Draw a rectangle around the faces
             for (x, y, w, h) in faces:
-                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                #cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                 cv2.imwrite('result.jpg',frame)
                 cv2.imwrite(fName,gray)
-
-            print(str(len(faces)) + " found!!")
 
             #set known image
             try : 
@@ -160,16 +162,13 @@ while True:
                             except : 
                                 continue
                 except : 
-                     continue
-             
+                     continue             
                     
             #upload image
             blob.upload_from_filename(fileName)
             bucket.rename_blob(blob , fName1)
             # public access from the URL
             bucket.blob(fName1).make_public()
-            
-
 
             #upload data to firebase
             data = {
@@ -182,12 +181,11 @@ while True:
     
     #if not ayone near less than 1m
     else :
-        GPIO.output(LED, 0)
+        GPIO.output(BUZ, 0)
         print("Distance : ", distance, " cm")
         db.child("/distance").set(distance)
         db.child("/faces").set(str(0))
         db.child("/match").set(0)
-
         
     #delete unwanted images
     try :
