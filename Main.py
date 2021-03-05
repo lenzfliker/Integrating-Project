@@ -122,33 +122,40 @@ while True:
 
             print(str(len(faces)) + " found!!")
 
+            #set known image
             try : 
                 known_image = face_recognition.load_image_file(fName) 
                 biden_encoding = face_recognition.face_encodings(known_image)[0] 
             except : 
                 print("error")
 
+            #match faces on first 15 sec
             for i in range(index,index1,-1) :
                 try : 
                     unknown_image = face_recognition.load_image_file(str(i)+".jpg")  
                     unknown_encoding = face_recognition.face_encodings(unknown_image)[0] 
                     results = face_recognition.compare_faces([biden_encoding], unknown_encoding) 
 
-                    if (results == [True]) : 
+                    if (results == [True]) : #if match found
+                        #match faces on second 15 sec
                         for x in range(index1,index2,-1) :
                             try : 
                                 unknown_image = face_recognition.load_image_file(str(x)+".jpg")  
                                 unknown_encoding = face_recognition.face_encodings(unknown_image)[0] 
                                 results = face_recognition.compare_faces([biden_encoding], unknown_encoding)
 
+                                #if match found
                                 if (results == [True]) : 
-                                    print("Found Match!!")    
+                                    print("Found Match!! " + str(x)+ ".jpg")    
                                     #upload image
                                     blob.upload_from_filename(str(x)+".jpg")
                                     bucket.rename_blob(blob , "match"+str(x)+".jpg")
                                     # public access from the URL
                                     bucket.blob("match"+str(x)+".jpg").make_public()
+
+                                    #set as found follower
                                     db.child("/match").set(1)
+                                    #last follower image url
                                     db.child("/last_follower").set(bucket.blob("match"+str(x)+".jpg").public_url)
                             except : 
                                 continue
@@ -180,7 +187,9 @@ while True:
         db.child("/distance").set(distance)
         db.child("/faces").set(str(0))
         db.child("/match").set(0)
-    
+
+        
+    #delete unwanted images
     try :
         for z in range(index2,index3,-1) : 
                 if os.path.exists(str(z)+".jpg"):
