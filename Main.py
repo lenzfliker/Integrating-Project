@@ -115,6 +115,8 @@ while True:
      
         else:     #if face detected
             GPIO.output(BUZ, 1)
+            time.sleep(0.1)
+            GPIO.output(BUZ, 0)
             print (faces)
             print ("Number of faces detected: " + str(faces.shape[0]))
 
@@ -181,7 +183,6 @@ while True:
     
     #if not ayone near less than 1m
     else :
-        GPIO.output(BUZ, 0)
         print("Distance : ", distance, " cm")
         db.child("/distance").set(distance)
         db.child("/faces").set(str(0))
