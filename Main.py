@@ -6,6 +6,7 @@ Created On : 16-02-2021
 *Run On Raspberry pi
 '''
 
+#import required libraries
 import RPi.GPIO as GPIO
 import time
 import pyrebase
@@ -30,15 +31,18 @@ config = {
   "storageBucket": "one-meter-clip.appspot.com"
 }
 
+#firbase initialization
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
 
-# Put your local file path 
+# local file path for last person
 fileName = "result.jpg"
+
+#cloud bucket 
 bucket = storage.bucket("one-meter-clip.appspot.com")
 blob = bucket.blob(fileName)
 
-#opencv camera
+#opencv camera fase xml file
 cascPath = "haarcascade_frontalface_default.xml"
 faceCascade = cv2.CascadeClassifier(cascPath)
 
@@ -67,7 +71,8 @@ while True:
     while GPIO.input(ECHO)==1:
         pulse_end=time.time()
     pulse_duration = pulse_end-pulse_start
-    #CALCULATE DISTANCE
+
+    #CALCULATE DISTANCE    (17150 is a constant)
     distance = pulse_duration * 17150
     distance = round(distance,2)
     
@@ -77,16 +82,30 @@ while True:
         
         now = datetime.now()
         
-        # dd/mm/YY H:M:S
+        #images name making
         imgName = now.strftime("%M%S")
+
+        #for for loops (calculate index using time)
         index = int(imgName)
+
+        #befor 15 seconds time
         time1 = datetime.now() - timedelta(seconds=15)
+
+        #before 30 seconds time for detect followers
         time2 = datetime.now() - timedelta(seconds=30)
+
+        #time before 2 minitues for delete images to avoid storage filling
         time3 = datetime.now() - timedelta(seconds=120)
+
+        #for for loops (calculate index using time)
         index1 = int(time1.strftime("%M%S"))
         index2 = int(time2.strftime("%M%S"))
         index3 = int(time3.strftime("%M%S"))
+
+        #file name for known image
         fName = imgName+".jpg"
+
+        #make renamed file name
         dt_string = now.strftime("%d:%m:%Y-%H:%M:%S")
         fName1 = dt_string+".jpg"        
 
@@ -136,6 +155,7 @@ while True:
             #match faces on first 15 sec
             for i in range(index,index1,-1) :
                 try : 
+                    #unknown image matching with known image
                     unknown_image = face_recognition.load_image_file(str(i)+".jpg")  
                     unknown_encoding = face_recognition.face_encodings(unknown_image)[0] 
                     results = face_recognition.compare_faces([biden_encoding], unknown_encoding) 
@@ -176,7 +196,7 @@ while True:
             data = {
                 "distance": distance,
                 "faces" : str(faces.shape[0]),
-                "last person" : bucket.blob(fName).public_url
+                "last person" : bucket.blob(fName1).public_url
             }
             
             db.update(data)
@@ -190,8 +210,11 @@ while True:
         
     #delete unwanted images
     try :
+        #run for loop to delete images on last 2 minitues
         for z in range(index2,index3,-1) : 
+            #check if image exist or not with file name
                 if os.path.exists(str(z)+".jpg"):
+                    #remove unwanted images
                     os.remove(str(z)+".jpg")
                     print("file deleted!!")
     except :
