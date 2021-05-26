@@ -25,7 +25,7 @@ initialize_app(cred, {'storageBucket': "one-meter-clip-default-rtdb.firebaseio.c
 
 #firebase configs
 config = {
-  "apiKey": "rafeFeNHofRgUmkye8owLYymZzI9qpoX3i0HDh4V",
+  "apiKey": "rafeFeNHofRgUm///////LYymZzI9qpoX3i0HDh4V",
   "authDomain": "one-meter-clip.firebaseapp.com",
   "databaseURL": "https://one-meter-clip-default-rtdb.firebaseio.com",
   "storageBucket": "one-meter-clip.appspot.com"
